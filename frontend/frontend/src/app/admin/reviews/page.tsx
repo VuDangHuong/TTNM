@@ -208,7 +208,7 @@ export default function AdminReviews() {
       Swal.fire({
         icon: 'success',
         title: 'Phê duyệt thành công!',
-        text: 'Đánh giá đã được phê duyệt (giả lập).',
+        text: 'Đánh giá đã được phê duyệt.',
         confirmButtonText: 'OK',
       });
     }

@@ -19,6 +19,8 @@ import {
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import Swal from 'sweetalert2';
+import { userSchema, newUserSchema, UserFormData, NewUserFormData } from '@/validations/user.validation';
+
 // Skeleton loader component
 const UsersSkeleton = () => (
   <div className="animate-pulse space-y-6">
@@ -69,13 +71,21 @@ export default function AdminUsers() {
   const [filterRole, setFilterRole] = useState("all");
   const [showModal, setShowModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [formData, setFormData] = useState<UserFormData | NewUserFormData>({
+    name: '',
+    email: '',
+    phone: '',
+    role: 'user',
+    status: 'active',
+    password: '',
+  });
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     const fetchUsers = async () => {
       try {
         const data = await fakeDataService.getAdminUsers();
         setUsers(data);
-        // Delay loading state to show skeleton effect
         setTimeout(() => setLoading(false), 500);
       } catch (error) {
         console.error("Error fetching users:", error);
@@ -95,13 +105,11 @@ export default function AdminUsers() {
   };
 
   const filteredUsers = users.filter((user) => {
-    // Apply search filter
     const searchMatches =
       user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.phone.toLowerCase().includes(searchTerm.toLowerCase());
 
-    // Apply role filter
     const roleMatches = filterRole === "all" || user.role === filterRole;
 
     return searchMatches && roleMatches;
@@ -118,32 +126,144 @@ export default function AdminUsers() {
 
   const handleEdit = (user: User) => {
     setSelectedUser(user);
+    console.log('Editing user data:', user);
+    setFormData({
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      role: user.role as "admin" | "user",
+      status: user.status as "active" | "inactive",
+      password: '',
+    });
+    setErrors({});
     setShowModal(true);
   };
 
   const handleAddNew = () => {
     setSelectedUser(null);
+    setFormData({
+      name: '',
+      email: '',
+      phone: '',
+      role: 'user',
+      status: 'active',
+      password: '',
+    });
+    setErrors({});
     setShowModal(true);
   };
 
   const handleCloseModal = () => {
     setShowModal(false);
     setSelectedUser(null);
+    setFormData({
+      name: '',
+      email: '',
+      phone: '',
+      role: 'user',
+      status: 'active',
+      password: '',
+    });
+    setErrors({});
   };
 
- const handleSaveUser = () => {
-  // In a real application, you would save the changes to the API
-  setShowModal(false);
-  setSelectedUser(null);
+ const handleSubmitUser = (e: React.FormEvent) => {
+  e.preventDefault();
+  setErrors({});
 
-  Swal.fire({
-    icon: 'success',
-    title: selectedUser ? 'Đã cập nhật thành công!' : 'Đã thêm mới thành công!',
-    text: selectedUser 
-      ? 'Thông tin người dùng đã được cập nhật (giả lập).' 
-      : 'Người dùng mới đã được thêm (giả lập).',
-    confirmButtonText: 'OK',
-  });
+  try {
+    let validatedData;
+    const dataToValidate = selectedUser && formData.password === '' ? { ...formData, password: undefined } : formData;
+
+    if (selectedUser) {
+      validatedData = userSchema.parse(dataToValidate);
+    } else {
+      validatedData = newUserSchema.parse(dataToValidate);
+    }
+
+    const emailExists = users.some(user => 
+      user.email === validatedData.email && (!selectedUser || user.id !== selectedUser.id)
+    );
+
+    if (emailExists) {
+      setErrors(prevErrors => ({
+        ...prevErrors,
+        email: 'Email đã tồn tại vui lòng nhập email khác.'
+      }));
+      Swal.fire({
+        icon: 'error',
+        title: 'Lỗi nhập liệu!',
+        text: 'Email đã tồn tại vui lòng nhập email khác.',
+        confirmButtonText: 'OK',
+      });
+      return;
+    }
+
+    if (selectedUser) {
+      const updatedUsers = users.map(user => {
+        if (user.id === selectedUser.id) {
+          const updatedUser = {
+            ...user,
+            name: validatedData.name,
+            email: validatedData.email,
+            phone: validatedData.phone,
+            role: validatedData.role,
+            status: validatedData.status,
+          };
+          if (validatedData.password !== undefined) {
+            (updatedUser as any).password = validatedData.password;
+          }
+          return updatedUser;
+        }
+        return user;
+      });
+      setUsers(updatedUsers);
+    } else {
+      const newUser: User = {
+        id: Date.now().toString(),
+        name: validatedData.name,
+        email: validatedData.email,
+        phone: validatedData.phone,
+        role: validatedData.role,
+        status: validatedData.status,
+        createdAt: new Date().toISOString(),
+        lastLogin: undefined,
+      };
+      setUsers([...users, newUser]);
+    }
+
+    setShowModal(false);
+    setSelectedUser(null);
+
+    Swal.fire({
+      icon: 'success',
+      title: selectedUser ? 'Đã cập nhật thành công!' : 'Đã thêm mới thành công!',
+      text: selectedUser 
+        ? 'Thông tin người dùng đã được cập nhật.' 
+        : 'Người dùng mới đã được thêm .',
+      confirmButtonText: 'OK',
+    });
+
+  } catch (error) {
+    console.error('Full validation error object:', error);
+    if (error instanceof Error) {
+      const zodError = error as any;
+      const newErrors: Record<string, string> = {};
+      if (zodError.errors) {
+        zodError.errors.forEach((err: any) => {
+          const path = err.path.join('.');
+          newErrors[path] = err.message;
+        });
+      }
+      setErrors(newErrors);
+      Swal.fire({
+        icon: 'error',
+        title: 'Lỗi nhập liệu!',
+        text: 'Vui lòng kiểm tra lại thông tin bạn đã nhập.',
+        confirmButtonText: 'OK',
+      });
+    }
+  }
 };
 
   const handleDeleteUser = (id: string) => {
@@ -165,40 +285,36 @@ export default function AdminUsers() {
   };
 
   const handleToggleStatus = (id: string) => {
-    // In a real app, this would call an API
     const user = users.find(u => u.id === id);
-  if (!user) return;
+    if (!user) return;
 
-  const newStatus = user.status === "active" ? "inactive" : "active";
-  const statusLabel = newStatus === "active" ? "hoạt động" : "ngưng hoạt động";
+    const newStatus = user.status === "active" ? "inactive" : "active";
+    const statusLabel = newStatus === "active" ? "hoạt động" : "ngưng hoạt động";
 
-  Swal.fire({
-    title: 'Xác nhận chuyển trạng thái',
-    text: `Bạn có chắc chắn muốn chuyển trạng thái người dùng thành "${statusLabel}"?`,
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonText: 'Có, chuyển trạng thái',
-    cancelButtonText: 'Không',
-    // reverseButtons: true,
-  }).then((result) => {
-    if (result.isConfirmed) {
-      // Cập nhật danh sách người dùng
-      const updatedUsers = users.map(user =>
-        user.id === id
-          ? { ...user, status: newStatus as "active" | "inactive" }
-          : user
-      );
-      setUsers(updatedUsers);
+    Swal.fire({
+      title: 'Xác nhận chuyển trạng thái',
+      text: `Bạn có chắc chắn muốn chuyển trạng thái người dùng thành "${statusLabel}"?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Có, chuyển trạng thái',
+      cancelButtonText: 'Không',
+    }).then((result) => {
+      if (result.isConfirmed) {
+        const updatedUsers = users.map(user =>
+          user.id === id
+            ? { ...user, status: newStatus as "active" | "inactive" }
+            : user
+        );
+        setUsers(updatedUsers);
 
-      // Hiển thị thông báo thành công
-      Swal.fire({
-        icon: 'success',
-        title: 'Thành công',
-        text: `Trạng thái người dùng đã được chuyển thành "${statusLabel}" (giả lập)!`,
-        confirmButtonText: 'OK',
-      });
-    }
-  });
+        Swal.fire({
+          icon: 'success',
+          title: 'Thành công',
+          text: `Trạng thái người dùng đã được chuyển thành "${statusLabel}"!`,
+          confirmButtonText: 'OK',
+        });
+      }
+    });
   };
 
   if (loading) {
@@ -223,7 +339,6 @@ export default function AdminUsers() {
         </div>
       </div>
 
-      {/* Filters */}
       <div className="bg-white rounded-xl shadow-sm p-4 mb-6 border border-gray-100">
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="relative flex-grow">
@@ -253,7 +368,6 @@ export default function AdminUsers() {
         </div>
       </div>
 
-      {/* User Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6 mb-6">
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 hover:shadow-md transition-shadow">
           <div className="flex items-center">
@@ -294,7 +408,6 @@ export default function AdminUsers() {
         </div>
       </div>
 
-      {/* Users list */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-6">
         <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
           <h2 className="text-lg font-semibold text-gray-900">Danh sách người dùng</h2>
@@ -422,147 +535,124 @@ export default function AdminUsers() {
         </div>
       </div>
 
-      {/* Modal for adding/editing user */}
       {showModal && (
-        <div className="fixed z-10 inset-0 overflow-y-auto">
-          <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <div className="fixed inset-0 transition-opacity" aria-hidden="true">
-              <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
-            </div>
-
-            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                <div className="sm:flex sm:items-start">
-                  <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-lg leading-6 font-medium text-gray-900">
-                        {selectedUser ? "Chỉnh sửa người dùng" : "Thêm người dùng mới"}
-                      </h3>
-                      <button
-                        type="button"
-                        onClick={handleCloseModal}
-                        className="text-red-500 hover:text-red-700 focus:outline-none"
-                      >
-                        <svg
-                          className="h-6 w-6"
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    </div>
-
-                    <div className="mt-4 space-y-3">
-                      <div>
-                        <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                          Họ tên
-                        </label>
-                        <input
-                          type="text"
-                          name="name"
-                          id="name"
-                          defaultValue={selectedUser?.name || ""}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
-                      </div>
-                      <div>
-                        <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                          Email
-                        </label>
-                        <input
-                          type="email"
-                          name="email"
-                          id="email"
-                          defaultValue={selectedUser?.email || ""}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
-                      </div>
-                      <div>
-                        <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
-                          Số điện thoại
-                        </label>
-                        <input
-                          type="text"
-                          name="phone"
-                          id="phone"
-                          defaultValue={selectedUser?.phone || ""}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label htmlFor="role" className="block text-sm font-medium text-gray-700">
-                            Vai trò
-                          </label>
-                          <select
-                            name="role"
-                            id="role"
-                            defaultValue={selectedUser?.role || "user"}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          >
-                            <option value="user">Người dùng</option>
-                            <option value="admin">Quản trị viên</option>
-                          </select>
-                        </div>
-                        <div>
-                          <label htmlFor="status" className="block text-sm font-medium text-gray-700">
-                            Trạng thái
-                          </label>
-                          <select
-                            name="status"
-                            id="status"
-                            defaultValue={selectedUser?.status || "active"}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          >
-                            <option value="active">Đang hoạt động</option>
-                            <option value="inactive">Không hoạt động</option>
-                          </select>
-                        </div>
-                      </div>
-                      {!selectedUser && (
-                        <div>
-                          <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                            Mật khẩu
-                          </label>
-                          <input
-                            type="password"
-                            name="password"
-                            id="password"
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          />
-                        </div>
-                      )}
-                    </div>
-                  </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="relative bg-white rounded-xl shadow-lg w-full max-w-md mx-auto p-8 max-h-[80vh] overflow-y-auto">
+            <button
+              type="button"
+              onClick={handleCloseModal}
+              className="absolute top-4 right-4 text-red-500 hover:text-red-700 text-2xl font-bold focus:outline-none z-10"
+              aria-label="Đóng"
+            >
+              ×
+            </button>
+            <h2 className="text-xl font-semibold text-center mb-6">
+              {selectedUser ? "Chỉnh sửa người dùng" : "Thêm người dùng mới"}
+            </h2>
+            <form onSubmit={handleSubmitUser} className="space-y-4">
+              <div>
+                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">Họ tên</label>
+                <input
+                  type="text"
+                  name="name"
+                  id="name"
+                  value={(formData as UserFormData).name}
+                  onChange={(e) => setFormData({ ...(formData as UserFormData), name: e.target.value })}
+                  className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.name ? "border-red-500" : "border-gray-300"}`}
+                />
+                {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name}</p>}
+              </div>
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <input
+                  type="email"
+                  name="email"
+                  id="email"
+                  value={(formData as UserFormData).email}
+                  onChange={(e) => setFormData({ ...(formData as UserFormData), email: e.target.value })}
+                  className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.email ? "border-red-500" : "border-gray-300"}`}
+                />
+                {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
+              </div>
+              <div>
+                <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">Số điện thoại</label>
+                <input
+                  type="text"
+                  name="phone"
+                  id="phone"
+                  value={(formData as UserFormData).phone}
+                  onChange={(e) => setFormData({ ...(formData as UserFormData), phone: e.target.value })}
+                  className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.phone ? "border-red-500" : "border-gray-300"}`}
+                />
+                {errors.phone && <p className="mt-1 text-sm text-red-600">{errors.phone}</p>}
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-1">Vai trò</label>
+                  <select
+                    name="role"
+                    id="role"
+                    value={(formData as UserFormData).role}
+                    onChange={(e) => setFormData({ ...(formData as UserFormData), role: e.target.value as "admin" | "user" })}
+                    className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.role ? "border-red-500" : "border-gray-300"}`}
+                  >
+                    <option value="user">Người dùng</option>
+                    <option value="admin">Quản trị viên</option>
+                  </select>
+                  {errors.role && <p className="mt-1 text-sm text-red-600">{errors.role}</p>}
+                </div>
+                <div>
+                  <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">Trạng thái</label>
+                  <select
+                    name="status"
+                    id="status"
+                    value={(formData as UserFormData).status}
+                    onChange={(e) => setFormData({ ...(formData as UserFormData), status: e.target.value as "active" | "inactive" })}
+                    className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.status ? "border-red-500" : "border-gray-300"}`}
+                  >
+                    <option value="active">Đang hoạt động</option>
+                    <option value="inactive">Không hoạt động</option>
+                  </select>
+                  {errors.status && <p className="mt-1 text-sm text-red-600">{errors.status}</p>}
                 </div>
               </div>
-              <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                <button
-                  type="button"
-                  onClick={handleCloseModal}
-                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
-                >
-                  Hủy
-                </button>
-                <button
-                  type="button"
-                  onClick={handleSaveUser}
-                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm"
-                >
-                  Lưu
-                </button>
+              {!selectedUser && (
+                <div>
+                  <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">Mật khẩu</label>
+                  <input
+                    type="password"
+                    name="password"
+                    id="password"
+                    value={(formData as NewUserFormData).password}
+                    onChange={(e) => setFormData({ ...(formData as NewUserFormData), password: e.target.value })}
+                    className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.password ? "border-red-500" : "border-gray-300"}`}
+                  />
+                  {errors.password && <p className="mt-1 text-sm text-red-600">{errors.password}</p>}
+                </div>
+              )}
+              <div className="flex justify-end space-x-2 pt-4">
                 {/* <button
                   type="button"
                   onClick={handleCloseModal}
-                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                  className="inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                 >
                   Hủy
                 </button> */}
+                <button
+                  type="submit"
+                  className="inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  {selectedUser ? "Cập nhật" : "Thêm mới"}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCloseModal}
+                  className="inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  Hủy
+                </button>
               </div>
-            </div>
+            </form>
           </div>
         </div>
       )}

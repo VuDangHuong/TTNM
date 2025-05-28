@@ -5,6 +5,7 @@ import { fakeDataService, Villa } from "@/services/fakeData";
 // import { Villa } from "@/services/villa.service";
 import Image from "next/image";
 import Swal from 'sweetalert2';
+import { villaSchema, VillaFormData } from "@/validations/villa.validation";
 import {
   PencilIcon,
   TrashIcon,
@@ -96,6 +97,38 @@ export default function AdminVillas() {
   const [searchTerm, setSearchTerm] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [selectedVilla, setSelectedVilla] = useState<Villa | null>(null);
+  const [formData, setFormData] = useState<VillaFormData>({
+    name: "",
+    description: "",
+    images: [],
+    basePrice: 0,
+    size: 0,
+    maxGuests: 0,
+    bedrooms: 0,
+    beds: 0,
+    isAvailable: true,
+    serviceCharge: 0,
+    timing: {
+      checkIn: "14:00",
+      checkOut: "12:00"
+    },
+    amenities: {
+      wifi: false,
+      airConditioning: false,
+      kitchen: false,
+      tv: false,
+      pool: false,
+      parking: false,
+      security: false,
+      breakfast: false
+    },
+    location: {
+      latitude: 0,
+      longitude: 0,
+      address: ""
+    }
+  });
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     const fetchVillas = async () => {
@@ -112,6 +145,404 @@ export default function AdminVillas() {
 
     fetchVillas();
   }, []);
+
+  useEffect(() => {
+    if (selectedVilla) {
+      setFormData({
+        name: selectedVilla.name,
+        description: selectedVilla.description,
+        images: selectedVilla.images || [],
+        basePrice: selectedVilla.basePrice,
+        size: selectedVilla.size,
+        maxGuests: selectedVilla.maxGuests,
+        bedrooms: selectedVilla.bedrooms,
+        beds: selectedVilla.beds,
+        isAvailable: true,
+        serviceCharge: 0,
+        timing: {
+          checkIn: "14:00",
+          checkOut: "12:00"
+        },
+        amenities: {
+          wifi: false,
+          airConditioning: false,
+          kitchen: false,
+          tv: false,
+          pool: false,
+          parking: false,
+          security: false,
+          breakfast: false
+        },
+        location: selectedVilla.location || {
+          latitude: 0,
+          longitude: 0,
+          address: ""
+        }
+      });
+    }
+  }, [selectedVilla]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    if (name.includes('.')) {
+      const [parent, child] = name.split('.');
+      setFormData(prev => {
+        const newData = { ...prev };
+        if (parent === 'location') {
+          newData.location = {
+            latitude: newData.location?.latitude || 0,
+            longitude: newData.location?.longitude || 0,
+            address: child === 'address' ? value : (newData.location?.address || '')
+          };
+        } else if (parent === 'timing') {
+          newData.timing = { ...newData.timing, [child]: value };
+        } else if (parent === 'amenities') {
+          newData.amenities = { ...newData.amenities, [child]: value };
+        }
+        return newData;
+      });
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
+  };
+
+  const handleNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    
+    // Xử lý đặc biệt cho trường giá
+    if (name === 'basePrice') {
+      // Loại bỏ tất cả ký tự không phải số
+      const numericValue = value.replace(/[^\d]/g, '');
+      const numValue = numericValue === '' ? 0 : Number(numericValue);
+      
+      if (numValue > 100000000) {
+        setErrors(prev => ({
+          ...prev,
+          [name]: 'Giá không được vượt quá 100.000.000đ'
+        }));
+      } else if (numValue < 1000000 && numValue !== 0) {
+        setErrors(prev => ({
+          ...prev,
+          [name]: 'Giá phải từ 1.000.000đ'
+        }));
+      } else {
+        setErrors(prev => ({
+          ...prev,
+          [name]: ''
+        }));
+      }
+
+      setFormData(prev => ({
+        ...prev,
+        [name]: numValue
+      }));
+      return;
+    }
+
+    // Xử lý các trường số khác
+    const numValue = value === '' ? 0 : Number(value);
+    const validations = {
+      size: {
+        min: 20,
+        max: 1000,
+        error: 'Diện tích phải từ 20m² đến 1000m²'
+      },
+      bedrooms: {
+        min: 1,
+        max: 10,
+        error: 'Số phòng ngủ phải từ 1 đến 10'
+      }
+    };
+
+    const validation = validations[name as keyof typeof validations];
+    if (validation) {
+      if (numValue < validation.min || numValue > validation.max) {
+        setErrors(prev => ({
+          ...prev,
+          [name]: validation.error
+        }));
+      } else {
+        setErrors(prev => ({
+          ...prev,
+          [name]: ''
+        }));
+      }
+    }
+
+    setFormData(prev => ({
+      ...prev,
+      [name]: numValue
+    }));
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    let newErrors: Record<string, string> = {};
+
+    try {
+      // 1. Validate all required fields
+      const requiredFields = {
+        name: { label: 'Tên Villa', value: formData.name },
+        description: { label: 'Mô tả', value: formData.description },
+        basePrice: { label: 'Giá cơ bản', value: formData.basePrice },
+        size: { label: 'Diện tích', value: formData.size },
+        bedrooms: { label: 'Số phòng ngủ', value: formData.bedrooms },
+        beds: { label: 'Số giường', value: formData.beds },
+        maxGuests: { label: 'Số khách tối đa', value: formData.maxGuests }
+      };
+
+      // Check all required fields
+      Object.entries(requiredFields).forEach(([field, { label, value }]) => {
+        if (!value || (typeof value === 'string' && !value.trim())) {
+          newErrors[field] = `${label} không được để trống.`;
+        }
+      });
+
+      // Check address separately since it's nested
+      if (!formData.location?.address?.trim()) {
+        newErrors['location.address'] = 'Địa chỉ không được để trống.';
+      }
+
+      // 2. Validate numeric fields with ranges
+      if (!newErrors.basePrice) {
+        if (formData.basePrice < 1000000) {
+          newErrors.basePrice = 'Giá phải từ 1.000.000đ';
+        } else if (formData.basePrice > 100000000) {
+          newErrors.basePrice = 'Giá không được vượt quá 100.000.000đ';
+        }
+      }
+
+      if (!newErrors.size) {
+        if (formData.size < 20 || formData.size > 1000) {
+          newErrors.size = 'Diện tích phải từ 20m² đến 1000m²';
+        }
+      }
+
+      if (!newErrors.bedrooms) {
+        if (formData.bedrooms < 1 || formData.bedrooms > 10) {
+          newErrors.bedrooms = 'Số phòng ngủ phải từ 1 đến 10';
+        }
+      }
+
+      if (!newErrors.beds) {
+        if (formData.beds < 1) {
+          newErrors.beds = 'Số giường phải lớn hơn 0';
+        } else if (formData.beds > 20) {
+          newErrors.beds = 'Số giường không được vượt quá 20';
+        }
+      }
+
+      if (!newErrors.maxGuests) {
+        if (formData.maxGuests < 1) {
+          newErrors.maxGuests = 'Số khách tối đa phải lớn hơn 0';
+        } else if (formData.maxGuests > 40) {
+          newErrors.maxGuests = 'Số khách tối đa không được vượt quá 40 người';
+        }
+      }
+
+      // Validate relationship between beds and maxGuests
+      if (!newErrors.beds && !newErrors.maxGuests) {
+        // Số khách tối đa phải nằm trong khoảng hợp lý so với số giường
+        // Giả sử mỗi giường có thể chứa tối đa 2 người
+        const minGuests = formData.beds; // Ít nhất bằng số giường
+        const maxGuests = formData.beds * 2; // Tối đa gấp đôi số giường
+
+        if (formData.maxGuests < minGuests) {
+          newErrors.maxGuests = `Số khách tối đa phải ít nhất bằng số giường (${minGuests} người)`;
+        } else if (formData.maxGuests > maxGuests) {
+          newErrors.maxGuests = `Số khách tối đa không được vượt quá ${maxGuests} người (gấp đôi số giường)`;
+        }
+      }
+
+      // 3. Validate image
+      if (!formData.images || formData.images.length === 0) {
+        newErrors.images = 'Vui lòng chọn ít nhất 1 hình ảnh.';
+      }
+
+      // 4. Check for duplicate name (only if name is not empty and no other name errors)
+      if (formData.name.trim() && !newErrors.name) {
+        const nameExists = villas.some(villa =>
+          villa.name.toLowerCase() === formData.name.toLowerCase() &&
+          (!selectedVilla || villa._id !== selectedVilla._id)
+        );
+
+        if (nameExists) {
+          newErrors.name = 'Tên Villa đã tồn tại vui lòng nhập tên villas khác.';
+        }
+      }
+
+      // 5. Validate using Zod schema
+      const formDataToValidate = {
+        ...formData,
+        basePrice: Number(formData.basePrice),
+        size: Number(formData.size),
+        maxGuests: Number(formData.maxGuests),
+        bedrooms: Number(formData.bedrooms),
+        beds: Number(formData.beds),
+        serviceCharge: Number(formData.serviceCharge),
+        location: {
+          latitude: Number(formData.location?.latitude || 0),
+          longitude: Number(formData.location?.longitude || 0),
+          address: formData.location?.address || ""
+        }
+      };
+
+      const validatedData = villaSchema.parse(formDataToValidate);
+
+      // If there are any validation errors, show them all at once
+      if (Object.keys(newErrors).length > 0) {
+        setErrors(newErrors);
+        Swal.fire({
+          icon: 'error',
+          title: 'Lỗi nhập liệu!',
+          text: 'Vui lòng kiểm tra lại thông tin bạn đã nhập.',
+          confirmButtonText: 'OK',
+        });
+        return;
+      }
+
+      // If all validations pass, proceed with saving
+      if (selectedVilla) {
+        // Cập nhật villa hiện có
+        const updatedVillas = villas.map(villa =>
+          villa._id === selectedVilla._id
+            ? { 
+                ...villa, 
+                ...validatedData, 
+                _id: villa._id,
+                subDescription: validatedData.description.substring(0, 100),
+                slug: validatedData.name.toLowerCase().replace(/\s+/g, '-'),
+                reviews: villa.reviews,
+                discounts: villa.discounts
+              }
+            : villa
+        );
+        setVillas(updatedVillas);
+      } else {
+        // Thêm villa mới vào danh sách
+        const newVilla: Villa = {
+          _id: Date.now().toString(),
+          ...validatedData,
+          subDescription: validatedData.description.substring(0, 100),
+          slug: validatedData.name.toLowerCase().replace(/\s+/g, '-'),
+          reviews: [],
+          discounts: []
+        };
+        setVillas(prev => [...prev, newVilla]);
+      }
+
+      setShowModal(false);
+      setSelectedVilla(null);
+      setErrors({});
+
+      Swal.fire({
+        icon: 'success',
+        title: selectedVilla ? 'Đã cập nhật thành công!' : 'Đã thêm mới thành công!',
+        text: selectedVilla
+          ? 'Thông tin villa đã được cập nhật.'
+          : 'Villa mới đã được thêm vào danh sách.',
+        confirmButtonText: 'OK',
+      });
+
+    } catch (error) {
+      if (error instanceof Error) {
+        const zodError = error as any;
+        if (zodError.errors) {
+          zodError.errors.forEach((err: any) => {
+            const path = err.path.join('.');
+            newErrors[path] = err.message;
+          });
+        }
+        setErrors(newErrors);
+        Swal.fire({
+          icon: 'error',
+          title: 'Lỗi!',
+          text: 'Vui lòng kiểm tra lại thông tin nhập vào.',
+          confirmButtonText: 'OK',
+        });
+      }
+    }
+  };
+
+  const handleEdit = (villa: Villa) => {
+    setSelectedVilla(villa);
+    setFormData({
+      name: villa.name,
+      description: villa.description,
+      images: villa.images || [],
+      basePrice: villa.basePrice,
+      size: villa.size,
+      maxGuests: villa.maxGuests,
+      bedrooms: villa.bedrooms,
+      beds: villa.beds,
+      isAvailable: true,
+      serviceCharge: 0,
+      timing: {
+        checkIn: "14:00",
+        checkOut: "12:00"
+      },
+      amenities: {
+        wifi: false,
+        airConditioning: false,
+        kitchen: false,
+        tv: false,
+        pool: false,
+        parking: false,
+        security: false,
+        breakfast: false
+      },
+      location: villa.location || {
+        latitude: 0,
+        longitude: 0,
+        address: ""
+      }
+    });
+    setShowModal(true);
+  };
+
+  const handleAddNew = () => {
+    setSelectedVilla(null);
+    setFormData({
+      name: "",
+      description: "",
+      images: [],
+      basePrice: 0,
+      size: 0,
+      maxGuests: 0,
+      bedrooms: 0,
+      beds: 0,
+      isAvailable: true,
+      serviceCharge: 0,
+      timing: {
+        checkIn: "14:00",
+        checkOut: "12:00"
+      },
+      amenities: {
+        wifi: false,
+        airConditioning: false,
+        kitchen: false,
+        tv: false,
+        pool: false,
+        parking: false,
+        security: false,
+        breakfast: false
+      },
+      location: {
+        latitude: 0,
+        longitude: 0,
+        address: ""
+      }
+    });
+    setShowModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setSelectedVilla(null);
+  };
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
@@ -159,11 +590,6 @@ export default function AdminVillas() {
     }
   };
 
-  const handleEdit = (villa: Villa) => {
-    setSelectedVilla(villa);
-    setShowModal(true);
-  };
-
   const handleDeleteVilla = (id: string) => {
     // In a real application, you would call an API to delete the villa
     Swal.fire({
@@ -183,29 +609,84 @@ export default function AdminVillas() {
     });
   };
 
-  const handleAddNew = () => {
-    setSelectedVilla(null);
-    setShowModal(true);
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      if (!file.type.startsWith('image/')) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Lỗi!',
+          text: 'Chỉ chấp nhận file ảnh',
+        });
+        return;
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Lỗi!',
+          text: 'Kích thước file không được vượt quá 10MB',
+        });
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData(prev => ({
+          ...prev,
+          images: [reader.result as string]
+        }));
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
-  const handleCloseModal = () => {
-    setShowModal(false);
-    setSelectedVilla(null);
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
   };
 
-  const handleSaveVilla = () => {
-    // In a real application, you would save the changes to the API
-    setShowModal(false);
-    setSelectedVilla(null);
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const files = e.dataTransfer.files;
+    if (files) {
+      const newImages: string[] = [];
+      Array.from(files).forEach(file => {
+        if (!file.type.startsWith('image/')) {
+          Swal.fire({
+            icon: 'error',
+            title: 'Lỗi!',
+            text: 'Chỉ chấp nhận file ảnh',
+          });
+          return;
+        }
+        if (file.size > 10 * 1024 * 1024) {
+          Swal.fire({
+            icon: 'error',
+            title: 'Lỗi!',
+            text: 'Kích thước file không được vượt quá 10MB',
+          });
+          return;
+        }
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          newImages.push(reader.result as string);
+          setFormData(prev => ({
+            ...prev,
+            images: [...prev.images, ...newImages]
+          }));
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+  };
 
-    Swal.fire({
-      icon: 'success',
-      title: selectedVilla ? 'Đã cập nhật thành công!' : 'Đã thêm mới thành công!',
-      text: selectedVilla
-        ? 'Thông tin villa đã được cập nhật (giả lập).'
-        : 'Villa mới đã được thêm (giả lập).',
-      confirmButtonText: 'OK',
-    });
+  const removeImage = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      images: prev.images.filter((_, i) => i !== index)
+    }));
   };
 
   if (loading) {
@@ -434,165 +915,179 @@ export default function AdminVillas() {
 
       {/* Modal for adding/editing villa */}
       {showModal && (
-        <div className="fixed z-10 inset-0 overflow-y-auto">
-          <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <div className="fixed inset-0 transition-opacity" aria-hidden="true">
-              <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
-            </div>
-
-            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                <div className="sm:flex sm:items-start">
-                  <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-lg leading-6 font-medium text-gray-900">
-                        {selectedVilla ? "Chỉnh sửa chỗ ở" : "Thêm chỗ ở"}
-                      </h3>
-                      <button
-                        type="button"
-                        onClick={handleCloseModal}
-                        className="text-red-500 hover:text-red-700 focus:outline-none"
-                      >
-                        <svg
-                          className="h-6 w-6"
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    </div>
-                    <div className="mt-4 space-y-3">
-                      <div>
-                        <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                          Tên Villa
-                        </label>
-                        <input
-                          type="text"
-                          name="name"
-                          id="name"
-                          defaultValue={selectedVilla?.name || ""}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
-                      </div>
-                      <div>
-                        <label htmlFor="description" className="block text-sm font-medium text-gray-700">
-                          Mô tả
-                        </label>
-                        <textarea
-                          name="description"
-                          id="description"
-                          defaultValue={selectedVilla?.description || ""}
-                          rows={3}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
-                      </div>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label htmlFor="price" className="block text-sm font-medium text-gray-700">
-                            Giá cơ bản (VNĐ)
-                          </label>
-                          <input
-                            type="number"
-                            name="price"
-                            id="price"
-                            defaultValue={selectedVilla?.basePrice || ""}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          />
-                        </div>
-                        <div>
-                          <label htmlFor="size" className="block text-sm font-medium text-gray-700">
-                            Diện tích (m²)
-                          </label>
-                          <input
-                            type="number"
-                            name="size"
-                            id="size"
-                            defaultValue={selectedVilla?.size || ""}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          />
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-3 gap-3">
-                        <div>
-                          <label htmlFor="bedrooms" className="block text-sm font-medium text-gray-700">
-                            Phòng ngủ
-                          </label>
-                          <input
-                            type="number"
-                            name="bedrooms"
-                            id="bedrooms"
-                            defaultValue={selectedVilla?.bedrooms || ""}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          />
-                        </div>
-                        <div>
-                          <label htmlFor="beds" className="block text-sm font-medium text-gray-700">
-                            Giường
-                          </label>
-                          <input
-                            type="number"
-                            name="beds"
-                            id="beds"
-                            defaultValue={selectedVilla?.beds || ""}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          />
-                        </div>
-                        <div>
-                          <label htmlFor="maxGuests" className="block text-sm font-medium text-gray-700">
-                            Khách tối đa
-                          </label>
-                          <input
-                            type="number"
-                            name="maxGuests"
-                            id="maxGuests"
-                            defaultValue={selectedVilla?.maxGuests || ""}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <label htmlFor="address" className="block text-sm font-medium text-gray-700">
-                          Địa chỉ
-                        </label>
-                        <input
-                          type="text"
-                          name="address"
-                          id="address"
-                          defaultValue={selectedVilla?.location?.address || ""}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
-                      </div>
-                    </div>
-                  </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="relative bg-white rounded-xl shadow-lg w-full max-w-lg mx-auto p-8 max-h-[80vh] overflow-y-auto">
+            {/* Close button */}
+            <button
+              type="button"
+              onClick={handleCloseModal}
+              className="absolute top-4 right-4 text-red-500 hover:text-red-700 text-2xl font-bold focus:outline-none z-10"
+              aria-label="Đóng"
+            >
+              ×
+            </button>
+            <h2 className="text-xl font-semibold text-center mb-6">
+              {selectedVilla ? "Chỉnh sửa Villa" : "Thêm Villa mới"}
+            </h2>
+            <form onSubmit={handleSubmit} className="space-y-5">
+              {/* Thông tin cơ bản */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">Tên Villa</label>
+                  <input
+                    type="text"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleInputChange}
+                    className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.name ? "border-red-500" : "border-gray-300"}`}
+                    autoFocus
+                  />
+                  {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name}</p>}
+                </div>
+                <div>
+                  <label htmlFor="basePrice" className="block text-sm font-medium text-gray-700 mb-1">Giá cơ bản (VNĐ)</label>
+                  <input
+                    type="text"
+                    name="basePrice"
+                    value={formData.basePrice === 0 ? '' : formData.basePrice.toLocaleString('vi-VN')}
+                    onChange={handleNumberChange}
+                    placeholder="Nhập giá"
+                    required
+                    className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.basePrice ? "border-red-500" : "border-gray-300"}`}
+                  />
+                  {errors.basePrice && <p className="mt-1 text-sm text-red-600">{errors.basePrice}</p>}
                 </div>
               </div>
-              <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                <button
-                  type="button"
-                  onClick={handleCloseModal}
-                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
-                >
-                  Hủy
-                </button>
-                <button
-                  type="button"
-                  onClick={handleSaveVilla}
-                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm"
-                >
-                  Lưu
-                </button>
-                {/* <button
-                  type="button"
-                  onClick={handleCloseModal}
-                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
-                >
-                  Hủy
-                </button> */}
+              {/* Thông tin chi tiết */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="size" className="block text-sm font-medium text-gray-700 mb-1">Diện tích (m²)</label>
+                  <input
+                    type="text"
+                    name="size"
+                    value={formData.size === 0 ? '' : formData.size}
+                    onChange={handleNumberChange}
+                    placeholder="Nhập diện tích"
+                    required
+                    className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.size ? "border-red-500" : "border-gray-300"}`}
+                  />
+                  {errors.size && <p className="mt-1 text-sm text-red-600">{errors.size}</p>}
+                </div>
+                <div>
+                  <label htmlFor="bedrooms" className="block text-sm font-medium text-gray-700 mb-1">Phòng ngủ</label>
+                  <input
+                    type="text"
+                    name="bedrooms"
+                    value={formData.bedrooms === 0 ? '' : formData.bedrooms}
+                    onChange={handleNumberChange}
+                    placeholder="Nhập số phòng"
+                    required
+                    className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.bedrooms ? "border-red-500" : "border-gray-300"}`}
+                  />
+                  {errors.bedrooms && <p className="mt-1 text-sm text-red-600">{errors.bedrooms}</p>}
+                </div>
+                <div>
+                  <label htmlFor="beds" className="block text-sm font-medium text-gray-700 mb-1">Giường</label>
+                  <input
+                    type="text"
+                    name="beds"
+                    value={formData.beds === 0 ? '' : formData.beds}
+                    onChange={handleNumberChange}
+                    placeholder="Nhập số giường"
+                    required
+                    className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.beds ? "border-red-500" : "border-gray-300"}`}
+                  />
+                  {errors.beds && <p className="mt-1 text-sm text-red-600">{errors.beds}</p>}
+                </div>
+                <div>
+                  <label htmlFor="maxGuests" className="block text-sm font-medium text-gray-700 mb-1">Khách tối đa</label>
+                  <input
+                    type="text"
+                    name="maxGuests"
+                    value={formData.maxGuests === 0 ? '' : formData.maxGuests}
+                    onChange={handleNumberChange}
+                    placeholder="Nhập số khách"
+                    required
+                    className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.maxGuests ? "border-red-500" : "border-gray-300"}`}
+                  />
+                  {errors.maxGuests && <p className="mt-1 text-sm text-red-600">{errors.maxGuests}</p>}
+                </div>
               </div>
-            </div>
+              {/* Mô tả */}
+              <div>
+                <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">Mô tả</label>
+                <textarea
+                  name="description"
+                  value={formData.description}
+                  onChange={handleInputChange}
+                  rows={3}
+                  className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.description ? "border-red-500" : "border-gray-300"}`}
+                />
+                {errors.description && <p className="mt-1 text-sm text-red-600">{errors.description}</p>}
+              </div>
+              {/* Địa chỉ */}
+              <div>
+                <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">Địa chỉ</label>
+                <input
+                  type="text"
+                  name="location.address"
+                  value={formData.location?.address || ""}
+                  onChange={handleInputChange}
+                  className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors["location.address"] ? "border-red-500" : "border-gray-300"}`}
+                />
+                {errors["location.address"] && <p className="mt-1 text-sm text-red-600">{errors["location.address"]}</p>}
+              </div>
+              {/* Hình ảnh */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Hình ảnh</label>
+                <div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-md p-2">
+                  <input
+                    id="file-upload"
+                    name="file-upload"
+                    type="file"
+                    className="mb-2"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                  />
+                  <span className="text-xs text-gray-500">PNG, JPG, GIF tối đa 10MB</span>
+                  {formData.images.length > 0 && (
+                    <div className="mt-2 flex gap-2">
+                      <div className="relative group">
+                        <img
+                          src={formData.images[0]}
+                          alt="Uploaded"
+                          className="h-16 w-16 max-w-[64px] max-h-[64px] object-cover rounded"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setFormData(prev => ({ ...prev, images: [] }))}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 text-xs"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  {errors.images && <p className="mt-1 text-sm text-red-600">{errors.images}</p>}
+                </div>
+              </div>
+              {/* Nút hành động */}
+              <div className="flex justify-end space-x-2 pt-4 sticky bottom-0 bg-white z-10">
+                <button
+                  type="submit"
+                  className="inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  {selectedVilla ? "Cập nhật" : "Thêm mới"}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCloseModal}
+                  className="inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  Hủy
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
