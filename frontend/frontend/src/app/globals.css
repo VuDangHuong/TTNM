@@ -1,0 +1,160 @@
+@import "tailwindcss";
+@font-face {
+  font-family: "PiniWeb";
+  src: url("/fonts/piniweb.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "PiniWeb";
+  src: url("/fonts/piniweb-700.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "PiniWeb";
+  src: url("/fonts/piniweb-900.woff2") format("woff2");
+  font-weight: 900;
+  font-style: normal;
+}
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+
+  /* Scrollbar colors */
+  --scrollbar-track: #f1f1f1;
+  --scrollbar-thumb: #c1c1c1;
+  --scrollbar-thumb-hover: #a1a1a1;
+
+  /* Sizes */
+  --scrollbar-width: 6px;
+  --scrollbar-width-hover: 8px;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* --background: #0a0a0a; */
+    --foreground: #ededed;
+
+    /* Dark mode scrollbar colors */
+    --scrollbar-track: #1a1a1a;
+    --scrollbar-thumb: #444444;
+    --scrollbar-thumb-hover: #555555;
+  }
+}
+
+body {
+  background: var(--background);
+  /* color: var(--foreground); */
+  font-family: "PiniWeb", sans-serif;
+}
+
+::-webkit-scrollbar {
+  width: var(--scrollbar-width);
+  height: var(--scrollbar-width);
+}
+
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 10px;
+  transition: background 0.3s ease, width 0.3s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+/* Hover effect on container to make scrollbar slightly wider */
+*:hover::-webkit-scrollbar-thumb {
+  width: var(--scrollbar-width-hover);
+}
+
+/* For Firefox */
+/* * {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+} */
+
+/* For touch devices, hide scrollbars but keep functionality */
+@media (pointer: coarse) {
+  ::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgba(150, 150, 150, 0.5);
+  }
+}
+
+/* Optional: Hide scrollbar for specific elements while keeping functionality */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Smooth scrolling for the entire page */
+html {
+  scroll-behavior: smooth;
+}
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-shimmer {
+  animation: shimmer 2s infinite linear;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+/* Admin panel styles */
+.admin-panel {
+  background-color: #f1f5f9 !important;
+  font-family: var(--font-geist-sans), sans-serif !important;
+}
+
+.admin-panel * {
+  font-family: var(--font-geist-sans), sans-serif !important;
+}
+
+.admin-dashboard {
+  background-color: #f1f5f9 !important;
+  min-height: 100vh;
+}
+
+button {
+  cursor: pointer;
+}

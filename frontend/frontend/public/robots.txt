@@ -1,0 +1,28 @@
+# Host
+Host: https://villaflcngocxanh.com
+
+# Allow all robots complete access
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /_next/
+Disallow: /admin/
+Disallow: /static/debug/
+
+# Block common crawlers from non-content
+User-agent: AdsBot-Google
+Disallow: /api/
+Disallow: /_next/
+Disallow: /static/
+
+User-agent: Googlebot-Image
+Allow: /images/
+Allow: /static/images/
+Disallow: 
+
+# Crawl delays and limits
+User-agent: *
+Crawl-delay: 0.5
+
+# Sitemaps
+Sitemap: https://villaflcngocxanh.com/sitemap.xml
