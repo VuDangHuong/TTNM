@@ -222,7 +222,7 @@ export default function AdminReviews() {
       text: 'Bạn có chắc chắn muốn từ chối đánh giá này không?',
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonText: 'Có, từ chối',
+      confirmButtonText: 'Xác nhận',
       cancelButtonText: 'Hủy bỏ'
     }).then((result) => {
       if (result.isConfirmed) {
