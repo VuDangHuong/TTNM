@@ -95,6 +95,8 @@ export default function AdminReviews() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 3;
   const [reviewStats, setReviewStats] = useState({
     total: 0,
     average: 0,
@@ -172,6 +174,20 @@ export default function AdminReviews() {
 
     return searchMatches && statusMatches;
   });
+
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredReviews.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedReviews = filteredReviews.slice(startIndex, startIndex + itemsPerPage);
+
+  // Reset to first page when search or filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterStatus]);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
 
   const formatDate = (dateString: string) => {
     try {
@@ -377,16 +393,15 @@ export default function AdminReviews() {
 
       {/* Reviews List */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-6">
-        <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+        <div className="px-4 sm:px-6 py-4 border-b border-gray-100 flex justify-between items-center">
           <div className="flex items-center">
-            {/* <ChatBubbleLeftRightIcon className="h-5 w-5 text-gray-400 mr-2" /> */}
             <h2 className="text-lg font-semibold text-gray-900">Danh sách đánh giá</h2>
           </div>
           <div className="text-sm text-gray-500">Hiển thị {filteredReviews.length} đánh giá</div>
         </div>
 
         <div className="divide-y divide-gray-100">
-          {filteredReviews.map((review) => (
+          {paginatedReviews.map((review) => (
             <div key={review.id} className="p-6 hover:bg-gray-50 transition-colors">
               <div className="flex items-start">
                 <div className="flex-shrink-0">
@@ -471,6 +486,101 @@ export default function AdminReviews() {
             </div>
           )}
         </div>
+
+        {/* Pagination */}
+        {filteredReviews.length > 0 && (
+          <div className="px-4 sm:px-6 py-4 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="text-sm text-gray-500">
+              Hiển thị {startIndex + 1} đến {Math.min(startIndex + itemsPerPage, filteredReviews.length)} của {filteredReviews.length} kết quả
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                className={`px-3 py-1 rounded-md text-sm font-medium ${
+                  currentPage === 1
+                    ? 'text-gray-400 cursor-not-allowed'
+                    : 'text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                Trước
+              </button>
+              
+              {/* First page */}
+              <button
+                onClick={() => handlePageChange(1)}
+                className={`px-3 py-1 rounded-md text-sm font-medium ${
+                  currentPage === 1
+                    ? 'bg-blue-600 text-white'
+                    : 'text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                1
+              </button>
+
+              {/* Left ellipsis */}
+              {currentPage > 3 && (
+                <span className="px-2 text-gray-500">...</span>
+              )}
+
+              {/* Pages around current page */}
+              {[...Array(totalPages)].map((_, index) => {
+                const pageNumber = index + 1;
+                if (
+                  pageNumber !== 1 &&
+                  pageNumber !== totalPages &&
+                  Math.abs(pageNumber - currentPage) <= 1
+                ) {
+                  return (
+                    <button
+                      key={pageNumber}
+                      onClick={() => handlePageChange(pageNumber)}
+                      className={`px-3 py-1 rounded-md text-sm font-medium ${
+                        currentPage === pageNumber
+                          ? 'bg-blue-600 text-white'
+                          : 'text-gray-700 hover:bg-gray-50'
+                      }`}
+                    >
+                      {pageNumber}
+                    </button>
+                  );
+                }
+                return null;
+              })}
+
+              {/* Right ellipsis */}
+              {currentPage < totalPages - 2 && (
+                <span className="px-2 text-gray-500">...</span>
+              )}
+
+              {/* Last page */}
+              {totalPages > 1 && (
+                <button
+                  onClick={() => handlePageChange(totalPages)}
+                  className={`px-3 py-1 rounded-md text-sm font-medium ${
+                    currentPage === totalPages
+                      ? 'bg-blue-600 text-white'
+                      : 'text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  {totalPages}
+                </button>
+              )}
+
+              <button
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className={`px-3 py-1 rounded-md text-sm font-medium ${
+                  currentPage === totalPages
+                    ? 'text-gray-400 cursor-not-allowed'
+                    : 'text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                Sau
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

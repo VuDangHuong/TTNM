@@ -56,6 +56,8 @@ export default function AdminBookings() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 3;
   const [bookingStats, setBookingStats] = useState({
     total: 0,
     pending: 0,
@@ -111,6 +113,20 @@ export default function AdminBookings() {
 
     return searchMatches && statusMatches;
   });
+
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredBookings.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedBookings = filteredBookings.slice(startIndex, startIndex + itemsPerPage);
+
+  // Reset to first page when search or filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterStatus]);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
 
   const formatDate = (dateString: string) => {
     try {
@@ -367,136 +383,182 @@ export default function AdminBookings() {
 
       {/* Bookings table */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-6">
-        <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+        <div className="px-4 sm:px-6 py-4 border-b border-gray-100 flex justify-between items-center">
           <div className="flex items-center">
-            {/* <CalendarIcon className="h-5 w-5 text-gray-400 mr-2" /> */}
             <h2 className="text-lg font-semibold text-gray-900">Danh sách đặt phòng</h2>
           </div>
           <div className="text-sm text-gray-500">Hiển thị {filteredBookings.length} đơn đặt phòng</div>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Mã đặt phòng
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Khách hàng
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Villa
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Thời gian
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Giá trị
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Trạng thái
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Thanh toán
-                </th>
-                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Thao tác
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredBookings.map((booking) => (
-                <tr key={booking.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    #{booking.id}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className="flex-shrink-0 h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700">
-                        <UserIcon className="h-4 w-4" />
-                      </div>
-                      <div className="ml-3">
-                        <div className="text-sm font-medium text-gray-900">{booking.userName}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className="flex-shrink-0 h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700">
-                        <BuildingOfficeIcon className="h-4 w-4" />
-                      </div>
-                      <div className="ml-3">
-                        <div className="text-sm font-medium text-gray-900">{booking.villaName}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">{formatDate(booking.checkIn)} - {formatDate(booking.checkOut)}</div>
-                    <div className="text-xs text-gray-500 mt-1">
-                      {booking.guests} khách
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {formatPrice(booking.totalPrice)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {getStatusBadge(booking.status)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {getPaymentBadge(booking.paymentStatus)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right">
-                    <div className="flex items-center justify-end space-x-3">
-                      {booking.status === "pending" && (
-                        <>
-                          <button
-                            onClick={() => handleConfirmBooking(booking.id)}
-                            className="text-blue-600 hover:text-blue-900 p-1 rounded-full hover:bg-blue-50"
-                            title="Xác nhận"
-                          >
-                            <CheckCircleIcon className="h-5 w-5" />
-                          </button>
-                          <button
-                            onClick={() => handleCancelBooking(booking.id)}
-                            className="text-red-600 hover:text-red-900 p-1 rounded-full hover:bg-red-50"
-                            title="Hủy"
-                          >
-                            <XCircleIcon className="h-5 w-5" />
-                          </button>
-                        </>
-                      )}
-                      {booking.status === "confirmed" && (
-                        <button
-                          onClick={() => handleCancelBooking(booking.id)}
-                          className="text-red-600 hover:text-red-900 p-1 rounded-full hover:bg-red-50"
-                          title="Hủy"
-                        >
-                          <XCircleIcon className="h-5 w-5" />
-                        </button>
-                      )}
-                      {/* <a href="#" className="text-gray-600 hover:text-gray-900 p-1 rounded-full hover:bg-gray-50">
-                        <ArrowPathIcon className="h-5 w-5" />
-                      </a> */}
-                    </div>
-                  </td>
-                </tr>
-              ))}
+          <div className="inline-block min-w-full align-middle">
+            <div className="overflow-hidden">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th scope="col" className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                      Mã đặt phòng
+                    </th>
+                    <th scope="col" className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                      Khách hàng
+                    </th>
+                    <th scope="col" className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                      Villa
+                    </th>
+                    <th scope="col" className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                      Thời gian
+                    </th>
+                    <th scope="col" className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                      Giá trị
+                    </th>
+                    <th scope="col" className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                      Trạng thái
+                    </th>
+                    <th scope="col" className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                      Thanh toán
+                    </th>
+                    <th scope="col" className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                      Thao tác
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {paginatedBookings.map((booking) => (
+                    <tr key={booking.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-4 sm:px-6 py-4 text-sm font-medium text-gray-900">
+                        #{booking.id}
+                      </td>
+                      <td className="px-4 sm:px-6 py-4">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0 h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700">
+                            <UserIcon className="h-4 w-4" />
+                          </div>
+                          <div className="ml-3">
+                            <div className="text-sm font-medium text-gray-900 truncate max-w-[120px]">{booking.userName}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 sm:px-6 py-4">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0 h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700">
+                            <BuildingOfficeIcon className="h-4 w-4" />
+                          </div>
+                          <div className="ml-3">
+                            <div className="text-sm font-medium text-gray-900 truncate max-w-[120px]">{booking.villaName}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 sm:px-6 py-4">
+                        <div className="text-sm font-medium text-gray-900">{formatDate(booking.checkIn)} - {formatDate(booking.checkOut)}</div>
+                        <div className="text-xs text-gray-500 mt-1">
+                          {booking.guests} khách
+                        </div>
+                      </td>
+                      <td className="px-4 sm:px-6 py-4 text-sm font-medium text-gray-900">
+                        {formatPrice(booking.totalPrice)}
+                      </td>
+                      <td className="px-4 sm:px-6 py-4">
+                        {getStatusBadge(booking.status)}
+                      </td>
+                      <td className="px-4 sm:px-6 py-4">
+                        {getPaymentBadge(booking.paymentStatus)}
+                      </td>
+                      <td className="px-4 sm:px-6 py-4 text-right">
+                        <div className="flex items-center justify-end space-x-3">
+                          {booking.status === "pending" && (
+                            <>
+                              <button
+                                onClick={() => handleConfirmBooking(booking.id)}
+                                className="text-blue-600 hover:text-blue-900 p-1 rounded-full hover:bg-blue-50"
+                                title="Xác nhận"
+                              >
+                                <CheckCircleIcon className="h-5 w-5" />
+                              </button>
+                              <button
+                                onClick={() => handleCancelBooking(booking.id)}
+                                className="text-red-600 hover:text-red-900 p-1 rounded-full hover:bg-red-50"
+                                title="Hủy"
+                              >
+                                <XCircleIcon className="h-5 w-5" />
+                              </button>
+                            </>
+                          )}
+                          {booking.status === "confirmed" && (
+                            <button
+                              onClick={() => handleCancelBooking(booking.id)}
+                              className="text-red-600 hover:text-red-900 p-1 rounded-full hover:bg-red-50"
+                              title="Hủy"
+                            >
+                              <XCircleIcon className="h-5 w-5" />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
 
-              {filteredBookings.length === 0 && (
-                <tr>
-                  <td colSpan={8} className="px-6 py-12 text-center">
-                    <div className="flex flex-col items-center justify-center">
-                      <CalendarIcon className="h-12 w-12 text-gray-300 mb-3" />
-                      <p className="text-gray-500 text-base font-medium">Không tìm thấy đơn đặt phòng nào</p>
-                      <p className="text-gray-400 text-sm mt-1">Thử tìm kiếm bằng từ khóa khác hoặc thay đổi bộ lọc</p>
-                    </div>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                  {filteredBookings.length === 0 && (
+                    <tr>
+                      <td colSpan={8} className="px-4 sm:px-6 py-12 text-center">
+                        <div className="flex flex-col items-center justify-center">
+                          <CalendarIcon className="h-12 w-12 text-gray-300 mb-3" />
+                          <p className="text-gray-500 text-base font-medium">Không tìm thấy đơn đặt phòng nào</p>
+                          <p className="text-gray-400 text-sm mt-1">Thử tìm kiếm bằng từ khóa khác hoặc thay đổi bộ lọc</p>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
+
+        {/* Pagination */}
+        {filteredBookings.length > 0 && (
+          <div className="px-4 sm:px-6 py-4 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="text-sm text-gray-500">
+              Hiển thị {startIndex + 1} đến {Math.min(startIndex + itemsPerPage, filteredBookings.length)} của {filteredBookings.length} kết quả
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                className={`px-3 py-1 rounded-md text-sm font-medium ${
+                  currentPage === 1
+                    ? 'text-gray-400 cursor-not-allowed'
+                    : 'text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                Trước
+              </button>
+              {[...Array(totalPages)].map((_, index) => (
+                <button
+                  key={index + 1}
+                  onClick={() => handlePageChange(index + 1)}
+                  className={`px-3 py-1 rounded-md text-sm font-medium ${
+                    currentPage === index + 1
+                      ? 'bg-blue-600 text-white'
+                      : 'text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  {index + 1}
+                </button>
+              ))}
+              <button
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className={`px-3 py-1 rounded-md text-sm font-medium ${
+                  currentPage === totalPages
+                    ? 'text-gray-400 cursor-not-allowed'
+                    : 'text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                Sau
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

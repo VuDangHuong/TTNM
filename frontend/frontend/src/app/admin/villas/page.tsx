@@ -965,36 +965,36 @@ export default function AdminVillas() {
       {/* Modal for adding/editing villa */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="relative bg-white rounded-xl shadow-lg w-full max-w-lg mx-auto p-8 max-h-[80vh] overflow-y-auto">
+          <div className="relative bg-white rounded-xl shadow-lg w-full max-w-lg mx-auto p-6 max-h-[80vh] overflow-y-auto">
             {/* Close button */}
             <button
               type="button"
               onClick={handleCloseModal}
-              className="absolute top-4 right-4 text-red-500 hover:text-red-700 text-2xl font-bold focus:outline-none z-10"
+              className="absolute top-3 right-3 text-red-500 hover:text-red-700 text-xl font-bold focus:outline-none z-10"
               aria-label="Đóng"
             >
               ×
             </button>
-            <h2 className="text-xl font-semibold text-center mb-6">
+            <h2 className="text-lg font-semibold text-center mb-4">
               {selectedVilla ? "Chỉnh sửa Villa" : "Thêm Villa mới"}
             </h2>
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form onSubmit={handleSubmit} className="space-y-4">
               {/* Thông tin cơ bản */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">Tên Villa</label>
+                  <label htmlFor="name" className="block text-xs font-medium text-gray-700 mb-1">Tên Villa</label>
                   <input
                     type="text"
                     name="name"
                     value={formData.name}
                     onChange={handleInputChange}
-                    className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.name ? "border-red-500" : "border-gray-300"}`}
+                    className={`w-full px-2 py-1.5 text-sm border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.name ? "border-red-500" : "border-gray-300"}`}
                     autoFocus
                   />
-                  {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name}</p>}
+                  {errors.name && <p className="mt-0.5 text-xs text-red-600">{errors.name}</p>}
                 </div>
                 <div>
-                  <label htmlFor="basePrice" className="block text-sm font-medium text-gray-700 mb-1">Giá cơ bản (VNĐ)</label>
+                  <label htmlFor="basePrice" className="block text-xs font-medium text-gray-700 mb-1">Giá cơ bản (VNĐ)</label>
                   <input
                     type="text"
                     name="basePrice"
@@ -1002,15 +1002,15 @@ export default function AdminVillas() {
                     onChange={handleNumberChange}
                     placeholder="Nhập giá"
                     required
-                    className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.basePrice ? "border-red-500" : "border-gray-300"}`}
+                    className={`w-full px-2 py-1.5 text-sm border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.basePrice ? "border-red-500" : "border-gray-300"}`}
                   />
-                  {errors.basePrice && <p className="mt-1 text-sm text-red-600">{errors.basePrice}</p>}
+                  {errors.basePrice && <p className="mt-0.5 text-xs text-red-600">{errors.basePrice}</p>}
                 </div>
               </div>
               {/* Thông tin chi tiết */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
-                  <label htmlFor="size" className="block text-sm font-medium text-gray-700 mb-1">Diện tích (m²)</label>
+                  <label htmlFor="size" className="block text-xs font-medium text-gray-700 mb-1">Diện tích (m²)</label>
                   <input
                     type="text"
                     name="size"
@@ -1018,12 +1018,12 @@ export default function AdminVillas() {
                     onChange={handleNumberChange}
                     placeholder="Nhập diện tích"
                     required
-                    className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.size ? "border-red-500" : "border-gray-300"}`}
+                    className={`w-full px-2 py-1.5 text-sm border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.size ? "border-red-500" : "border-gray-300"}`}
                   />
-                  {errors.size && <p className="mt-1 text-sm text-red-600">{errors.size}</p>}
+                  {errors.size && <p className="mt-0.5 text-xs text-red-600">{errors.size}</p>}
                 </div>
                 <div>
-                  <label htmlFor="bedrooms" className="block text-sm font-medium text-gray-700 mb-1">Phòng ngủ</label>
+                  <label htmlFor="bedrooms" className="block text-xs font-medium text-gray-700 mb-1">Phòng ngủ</label>
                   <input
                     type="text"
                     name="bedrooms"
@@ -1031,12 +1031,12 @@ export default function AdminVillas() {
                     onChange={handleNumberChange}
                     placeholder="Nhập số phòng"
                     required
-                    className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.bedrooms ? "border-red-500" : "border-gray-300"}`}
+                    className={`w-full px-2 py-1.5 text-sm border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.bedrooms ? "border-red-500" : "border-gray-300"}`}
                   />
-                  {errors.bedrooms && <p className="mt-1 text-sm text-red-600">{errors.bedrooms}</p>}
+                  {errors.bedrooms && <p className="mt-0.5 text-xs text-red-600">{errors.bedrooms}</p>}
                 </div>
                 <div>
-                  <label htmlFor="beds" className="block text-sm font-medium text-gray-700 mb-1">Giường</label>
+                  <label htmlFor="beds" className="block text-xs font-medium text-gray-700 mb-1">Giường</label>
                   <input
                     type="text"
                     name="beds"
@@ -1044,12 +1044,12 @@ export default function AdminVillas() {
                     onChange={handleNumberChange}
                     placeholder="Nhập số giường"
                     required
-                    className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.beds ? "border-red-500" : "border-gray-300"}`}
+                    className={`w-full px-2 py-1.5 text-sm border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.beds ? "border-red-500" : "border-gray-300"}`}
                   />
-                  {errors.beds && <p className="mt-1 text-sm text-red-600">{errors.beds}</p>}
+                  {errors.beds && <p className="mt-0.5 text-xs text-red-600">{errors.beds}</p>}
                 </div>
                 <div>
-                  <label htmlFor="maxGuests" className="block text-sm font-medium text-gray-700 mb-1">Khách tối đa</label>
+                  <label htmlFor="maxGuests" className="block text-xs font-medium text-gray-700 mb-1">Khách tối đa</label>
                   <input
                     type="text"
                     name="maxGuests"
@@ -1057,81 +1057,81 @@ export default function AdminVillas() {
                     onChange={handleNumberChange}
                     placeholder="Nhập số khách"
                     required
-                    className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.maxGuests ? "border-red-500" : "border-gray-300"}`}
+                    className={`w-full px-2 py-1.5 text-sm border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.maxGuests ? "border-red-500" : "border-gray-300"}`}
                   />
-                  {errors.maxGuests && <p className="mt-1 text-sm text-red-600">{errors.maxGuests}</p>}
+                  {errors.maxGuests && <p className="mt-0.5 text-xs text-red-600">{errors.maxGuests}</p>}
                 </div>
               </div>
               {/* Mô tả */}
               <div>
-                <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">Mô tả</label>
+                <label htmlFor="description" className="block text-xs font-medium text-gray-700 mb-1">Mô tả</label>
                 <textarea
                   name="description"
                   value={formData.description}
                   onChange={handleInputChange}
-                  rows={3}
-                  className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.description ? "border-red-500" : "border-gray-300"}`}
+                  rows={2}
+                  className={`w-full px-2 py-1.5 text-sm border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.description ? "border-red-500" : "border-gray-300"}`}
                 />
-                {errors.description && <p className="mt-1 text-sm text-red-600">{errors.description}</p>}
+                {errors.description && <p className="mt-0.5 text-xs text-red-600">{errors.description}</p>}
               </div>
               {/* Địa chỉ */}
               <div>
-                <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">Địa chỉ</label>
+                <label htmlFor="address" className="block text-xs font-medium text-gray-700 mb-1">Địa chỉ</label>
                 <input
                   type="text"
                   name="location.address"
                   value={formData.location?.address || ""}
                   onChange={handleInputChange}
-                  className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors["location.address"] ? "border-red-500" : "border-gray-300"}`}
+                  className={`w-full px-2 py-1.5 text-sm border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors["location.address"] ? "border-red-500" : "border-gray-300"}`}
                 />
-                {errors["location.address"] && <p className="mt-1 text-sm text-red-600">{errors["location.address"]}</p>}
+                {errors["location.address"] && <p className="mt-0.5 text-xs text-red-600">{errors["location.address"]}</p>}
               </div>
               {/* Hình ảnh */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Hình ảnh</label>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Hình ảnh</label>
                 <div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-md p-2">
                   <input
                     id="file-upload"
                     name="file-upload"
                     type="file"
-                    className="mb-2"
+                    className="mb-1"
                     accept="image/*"
                     onChange={handleImageUpload}
                   />
                   <span className="text-xs text-gray-500">PNG, JPG, GIF tối đa 10MB</span>
                   {formData.images.length > 0 && (
-                    <div className="mt-2 flex gap-2">
+                    <div className="mt-1 flex gap-2">
                       <div className="relative group">
                         <img
                           src={formData.images[0]}
                           alt="Uploaded"
-                          className="h-16 w-16 max-w-[64px] max-h-[64px] object-cover rounded"
+                          className="h-12 w-12 max-w-[48px] max-h-[48px] object-cover rounded"
                         />
                         <button
                           type="button"
                           onClick={() => setFormData(prev => ({ ...prev, images: [] }))}
-                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 text-xs"
+                          className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5 hover:bg-red-600 text-xs"
                         >
                           ×
                         </button>
                       </div>
                     </div>
                   )}
-                  {errors.images && <p className="mt-1 text-sm text-red-600">{errors.images}</p>}
+                  {errors.images && <p className="mt-0.5 text-xs text-red-600">{errors.images}</p>}
                 </div>
               </div>
               {/* Nút hành động */}
-              <div className="flex justify-end space-x-2 pt-4 sticky bottom-0 bg-white z-10">
+              <div className="flex justify-end space-x-2 pt-3 sticky bottom-0 bg-white z-10">
                 <button
                   type="submit"
-                  className="inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  className="inline-flex justify-center rounded-md border border-transparent shadow-sm px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                 >
                   {selectedVilla ? "Lưu" : "Lưu"}
                 </button>
                 <button
                   type="button"
                   onClick={handleCloseModal}
-                  className="inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  className="inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                 >
                   Hủy
                 </button>
