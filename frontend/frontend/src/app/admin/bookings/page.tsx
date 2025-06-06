@@ -220,7 +220,7 @@ export default function AdminBookings() {
       Swal.fire({
         icon: 'success',
         title: 'Xác nhận thành công!',
-        text: `Đơn đặt phòng #${id} đã được xác nhận (giả lập).`,
+        text: `Đơn đặt phòng #${id} đã được xác nhận.`,
         confirmButtonText: 'OK'
       });
     }
@@ -263,7 +263,7 @@ export default function AdminBookings() {
       Swal.fire({
         icon: 'info',
         title: 'Đã hủy đặt phòng',
-        text: `Đơn đặt phòng #${id} đã bị hủy (giả lập).`,
+        text: `Đơn đặt phòng #${id} đã bị hủy .`,
         confirmButtonText: 'OK'
       });
     }
@@ -369,7 +369,7 @@ export default function AdminBookings() {
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-6">
         <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
           <div className="flex items-center">
-            <CalendarIcon className="h-5 w-5 text-gray-400 mr-2" />
+            {/* <CalendarIcon className="h-5 w-5 text-gray-400 mr-2" /> */}
             <h2 className="text-lg font-semibold text-gray-900">Danh sách đặt phòng</h2>
           </div>
           <div className="text-sm text-gray-500">Hiển thị {filteredBookings.length} đơn đặt phòng</div>

@@ -146,7 +146,7 @@ export default function AdminReviews() {
   const handleDeleteReview = (id: string) => {
     Swal.fire({
       title: 'Bạn có chắc chắn?',
-      text: `Bạn có muốn xóa người dùng ID ${id}?`,
+      text: `Bạn có muốn xóa đánh giá ${id} này không?`,
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#d33',
@@ -156,7 +156,7 @@ export default function AdminReviews() {
     }).then((result) => {
       if (result.isConfirmed) {
         setReviews(reviews.filter(review => review.id !== id));
-        Swal.fire('Đã xóa!', `Người dùng ID ${id} đã bị xóa.`, 'success');
+        Swal.fire('Đã xóa!', `Đánh giá ID ${id} đã bị xóa.`, 'success');
       }
     });
   }
@@ -184,7 +184,7 @@ export default function AdminReviews() {
   const handleApproveReview = (id: string) => {
   Swal.fire({
     title: 'Bạn có chắc chắn muốn xác nhận?',
-    text: `Đánh giá #${id} sẽ được chuyển sang trạng thái đã phê duyệt.`,
+    text: `Đánh giá sẽ được chuyển sang trạng thái đã phê duyệt.`,
     icon: 'question',
     showCancelButton: true,
     confirmButtonText: 'Xác nhận',
@@ -243,7 +243,7 @@ export default function AdminReviews() {
         Swal.fire({
           icon: 'success',
           title: 'Từ chối thành công!',
-          text: 'Đánh giá đã bị từ chối (giả lập).',
+          text: 'Đánh giá đã bị từ chối .',
           confirmButtonText: 'OK'
         });
       }
@@ -379,7 +379,7 @@ export default function AdminReviews() {
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-6">
         <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
           <div className="flex items-center">
-            <ChatBubbleLeftRightIcon className="h-5 w-5 text-gray-400 mr-2" />
+            {/* <ChatBubbleLeftRightIcon className="h-5 w-5 text-gray-400 mr-2" /> */}
             <h2 className="text-lg font-semibold text-gray-900">Danh sách đánh giá</h2>
           </div>
           <div className="text-sm text-gray-500">Hiển thị {filteredReviews.length} đánh giá</div>

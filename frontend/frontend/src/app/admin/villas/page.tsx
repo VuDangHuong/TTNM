@@ -393,16 +393,16 @@ export default function AdminVillas() {
       const validatedData = villaSchema.parse(formDataToValidate);
 
       // If there are any validation errors, show them all at once
-      if (Object.keys(newErrors).length > 0) {
-        setErrors(newErrors);
-        Swal.fire({
-          icon: 'error',
-          title: 'Lỗi nhập liệu!',
-          text: 'Vui lòng kiểm tra lại thông tin bạn đã nhập.',
-          confirmButtonText: 'OK',
-        });
-        return;
-      }
+      // if (Object.keys(newErrors).length > 0) {
+      //   setErrors(newErrors);
+      //   Swal.fire({
+      //     icon: 'error',
+      //     title: 'Lỗi nhập liệu!',
+      //     text: 'Vui lòng kiểm tra lại thông tin bạn đã nhập.',
+      //     confirmButtonText: 'OK',
+      //   });
+      //   return;
+      // }
 
       // If all validations pass, proceed with saving
       if (selectedVilla) {
@@ -457,12 +457,12 @@ export default function AdminVillas() {
           });
         }
         setErrors(newErrors);
-        Swal.fire({
-          icon: 'error',
-          title: 'Lỗi!',
-          text: 'Vui lòng kiểm tra lại thông tin nhập vào.',
-          confirmButtonText: 'OK',
-        });
+        // Swal.fire({
+        //   icon: 'error',
+        //   title: 'Lỗi!',
+        //   text: 'Vui lòng kiểm tra lại thông tin nhập vào.',
+        //   confirmButtonText: 'OK',
+        // });
       }
     }
   };
@@ -788,7 +788,7 @@ export default function AdminVillas() {
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-6">
         <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
           <div className="flex items-center">
-            <ListBulletIcon className="h-5 w-5 text-gray-400 mr-2" />
+            {/* <ListBulletIcon className="h-5 w-5 text-gray-400 mr-2" /> */}
             <h2 className="text-lg font-semibold text-gray-900">Danh sách chỗ ở</h2>
           </div>
           <div className="text-sm text-gray-500">Hiển thị {filteredVillas.length} chỗ ở</div>
