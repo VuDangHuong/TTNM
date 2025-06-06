@@ -97,6 +97,8 @@ export default function AdminVillas() {
   const [searchTerm, setSearchTerm] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [selectedVilla, setSelectedVilla] = useState<Villa | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 3;
   const [formData, setFormData] = useState<VillaFormData>({
     name: "",
     description: "",
@@ -393,16 +395,10 @@ export default function AdminVillas() {
       const validatedData = villaSchema.parse(formDataToValidate);
 
       // If there are any validation errors, show them all at once
-      // if (Object.keys(newErrors).length > 0) {
-      //   setErrors(newErrors);
-      //   Swal.fire({
-      //     icon: 'error',
-      //     title: 'Lỗi nhập liệu!',
-      //     text: 'Vui lòng kiểm tra lại thông tin bạn đã nhập.',
-      //     confirmButtonText: 'OK',
-      //   });
-      //   return;
-      // }
+      if (Object.keys(newErrors).length > 0) {
+        setErrors(newErrors);
+        return;
+      }
 
       // If all validations pass, proceed with saving
       if (selectedVilla) {
@@ -457,12 +453,6 @@ export default function AdminVillas() {
           });
         }
         setErrors(newErrors);
-        // Swal.fire({
-        //   icon: 'error',
-        //   title: 'Lỗi!',
-        //   text: 'Vui lòng kiểm tra lại thông tin nhập vào.',
-        //   confirmButtonText: 'OK',
-        // });
       }
     }
   };
@@ -553,6 +543,20 @@ export default function AdminVillas() {
       villa.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (villa.location?.address && villa.location.address.toLowerCase().includes(searchTerm.toLowerCase()))
   );
+
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredVillas.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedVillas = filteredVillas.slice(startIndex, startIndex + itemsPerPage);
+
+  // Reset to first page when search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("vi-VN", {
@@ -788,7 +792,6 @@ export default function AdminVillas() {
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-6">
         <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
           <div className="flex items-center">
-            {/* <ListBulletIcon className="h-5 w-5 text-gray-400 mr-2" /> */}
             <h2 className="text-lg font-semibold text-gray-900">Danh sách chỗ ở</h2>
           </div>
           <div className="text-sm text-gray-500">Hiển thị {filteredVillas.length} chỗ ở</div>
@@ -819,7 +822,7 @@ export default function AdminVillas() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredVillas.map((villa) => {
+              {paginatedVillas.map((villa) => {
                 const discountStatus = getDiscountStatus(villa);
                 const reviews = villa.reviews || [];
                 const avgRating = reviews.length
@@ -911,6 +914,52 @@ export default function AdminVillas() {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination */}
+        {filteredVillas.length > 0 && (
+          <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between">
+            <div className="text-sm text-gray-500">
+              Hiển thị {startIndex + 1} đến {Math.min(startIndex + itemsPerPage, filteredVillas.length)} của {filteredVillas.length} kết quả
+            </div>
+            <div className="flex space-x-2">
+              <button
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                className={`px-3 py-1 rounded-md text-sm font-medium ${
+                  currentPage === 1
+                    ? 'text-gray-400 cursor-not-allowed'
+                    : 'text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                Trước
+              </button>
+              {[...Array(totalPages)].map((_, index) => (
+                <button
+                  key={index + 1}
+                  onClick={() => handlePageChange(index + 1)}
+                  className={`px-3 py-1 rounded-md text-sm font-medium ${
+                    currentPage === index + 1
+                      ? 'bg-blue-600 text-white'
+                      : 'text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  {index + 1}
+                </button>
+              ))}
+              <button
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className={`px-3 py-1 rounded-md text-sm font-medium ${
+                  currentPage === totalPages
+                    ? 'text-gray-400 cursor-not-allowed'
+                    : 'text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                Sau
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Modal for adding/editing villa */}

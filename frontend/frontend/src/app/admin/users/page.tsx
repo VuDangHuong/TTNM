@@ -71,6 +71,8 @@ export default function AdminUsers() {
   const [filterRole, setFilterRole] = useState("all");
   const [showModal, setShowModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 3;
   const [formData, setFormData] = useState<UserFormData | NewUserFormData>({
     name: '',
     email: '',
@@ -114,6 +116,20 @@ export default function AdminUsers() {
 
     return searchMatches && roleMatches;
   });
+
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedUsers = filteredUsers.slice(startIndex, startIndex + itemsPerPage);
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterRole]);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return "Chưa đăng nhập";
@@ -181,44 +197,46 @@ export default function AdminUsers() {
       validatedData = newUserSchema.parse(dataToValidate);
     }
 
-    const emailExists = users.some(user => 
-      user.email === validatedData.email && (!selectedUser || user.id !== selectedUser.id)
-    );
+    const newErrors: Record<string, string> = {};
 
-    if (emailExists) {
-      setErrors(prevErrors => ({
-        ...prevErrors,
-        email: 'Email đã tồn tại vui lòng nhập email khác.'
-      }));
-      Swal.fire({
-        icon: 'error',
-        title: 'Lỗi nhập liệu!',
-        text: 'Email đã tồn tại vui lòng nhập email khác.',
-        confirmButtonText: 'OK',
-      });
+    // If there are any validation errors, show them all at once
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
       return;
     }
 
+    // Check for duplicate email
+    const emailExists = users.some(user => 
+      user.email.toLowerCase() === formData.email.toLowerCase() && 
+      (!selectedUser || user.id !== selectedUser.id)
+    );
+
+    if (emailExists) {
+      setErrors(prev => ({
+        ...prev,
+        email: 'Email đã tồn tại vui lòng nhập email khác.'
+      }));
+      return;
+    }
+
+    // If all validations pass, proceed with saving
     if (selectedUser) {
-      const updatedUsers = users.map(user => {
-        if (user.id === selectedUser.id) {
-          const updatedUser = {
-            ...user,
-            name: validatedData.name,
-            email: validatedData.email,
-            phone: validatedData.phone,
-            role: validatedData.role,
-            status: validatedData.status,
-          };
-          if (validatedData.password !== undefined) {
-            (updatedUser as any).password = validatedData.password;
-          }
-          return updatedUser;
-        }
-        return user;
-      });
+      // Update existing user
+      const updatedUsers = users.map(user =>
+        user.id === selectedUser.id
+          ? { 
+              ...user, 
+              name: validatedData.name,
+              email: validatedData.email,
+              phone: validatedData.phone,
+              role: validatedData.role,
+              status: validatedData.status
+            }
+          : user
+      );
       setUsers(updatedUsers);
     } else {
+      // Add new user
       const newUser: User = {
         id: Date.now().toString(),
         name: validatedData.name,
@@ -226,42 +244,35 @@ export default function AdminUsers() {
         phone: validatedData.phone,
         role: validatedData.role,
         status: validatedData.status,
-        createdAt: new Date().toISOString(),
-        lastLogin: undefined,
+        createdAt: new Date().toISOString()
       };
-      setUsers([...users, newUser]);
+      setUsers(prev => [...prev, newUser]);
     }
 
     setShowModal(false);
     setSelectedUser(null);
+    setErrors({});
 
     Swal.fire({
       icon: 'success',
       title: selectedUser ? 'Đã cập nhật thành công!' : 'Đã thêm mới thành công!',
-      text: selectedUser 
-        ? 'Thông tin người dùng đã được cập nhật.' 
-        : 'Người dùng mới đã được thêm .',
+      text: selectedUser
+        ? 'Thông tin người dùng đã được cập nhật.'
+        : 'Người dùng mới đã được thêm vào danh sách.',
       confirmButtonText: 'OK',
     });
 
   } catch (error) {
-    console.error('Full validation error object:', error);
     if (error instanceof Error) {
       const zodError = error as any;
-      const newErrors: Record<string, string> = {};
       if (zodError.errors) {
+        const validationErrors: Record<string, string> = {};
         zodError.errors.forEach((err: any) => {
           const path = err.path.join('.');
-          newErrors[path] = err.message;
+          validationErrors[path] = err.message;
         });
+        setErrors(validationErrors);
       }
-      setErrors(newErrors);
-      Swal.fire({
-        icon: 'error',
-        title: 'Lỗi nhập liệu!',
-        text: 'Vui lòng kiểm tra lại thông tin bạn đã nhập.',
-        confirmButtonText: 'OK',
-      });
     }
   }
 };
@@ -439,7 +450,7 @@ export default function AdminUsers() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredUsers.map((user) => (
+              {paginatedUsers.map((user) => (
                 <tr key={user.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
@@ -533,6 +544,52 @@ export default function AdminUsers() {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination */}
+        {filteredUsers.length > 0 && (
+          <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between">
+            <div className="text-sm text-gray-500">
+              Hiển thị {startIndex + 1} đến {Math.min(startIndex + itemsPerPage, filteredUsers.length)} của {filteredUsers.length} kết quả
+            </div>
+            <div className="flex space-x-2">
+              <button
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                className={`px-3 py-1 rounded-md text-sm font-medium ${
+                  currentPage === 1
+                    ? 'text-gray-400 cursor-not-allowed'
+                    : 'text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                Trước
+              </button>
+              {[...Array(totalPages)].map((_, index) => (
+                <button
+                  key={index + 1}
+                  onClick={() => handlePageChange(index + 1)}
+                  className={`px-3 py-1 rounded-md text-sm font-medium ${
+                    currentPage === index + 1
+                      ? 'bg-blue-600 text-white'
+                      : 'text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  {index + 1}
+                </button>
+              ))}
+              <button
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className={`px-3 py-1 rounded-md text-sm font-medium ${
+                  currentPage === totalPages
+                    ? 'text-gray-400 cursor-not-allowed'
+                    : 'text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                Sau
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {showModal && (
@@ -631,13 +688,6 @@ export default function AdminUsers() {
                 </div>
               )}
               <div className="flex justify-end space-x-2 pt-4">
-                {/* <button
-                  type="button"
-                  onClick={handleCloseModal}
-                  className="inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                >
-                  Hủy
-                </button> */}
                 <button
                   type="submit"
                   className="inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
