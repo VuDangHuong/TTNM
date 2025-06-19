@@ -434,8 +434,8 @@ export default function AdminPayments() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {formatDate(payment.date)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        <a href="#" className="text-blue-600 hover:text-blue-800 hover:underline">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-sm">
+                        <a href="#" className=" hover:text-blue-800 hover:underline">
                           #{payment.bookingId}
                         </a>
                       </td>

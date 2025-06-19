@@ -213,19 +213,34 @@ export default function AdminVillas() {
 
   const handleNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    
+    // Show error if empty
+    if (value.trim() === "") {
+      setErrors(prev => ({
+        ...prev,
+        [name]: 'Không được để trống.'
+      }));
+      setFormData(prev => ({
+        ...prev,
+        [name]: 0
+      }));
+      return;
+    }
     // Xử lý đặc biệt cho trường giá
     if (name === 'basePrice') {
       // Loại bỏ tất cả ký tự không phải số
       const numericValue = value.replace(/[^\d]/g, '');
       const numValue = numericValue === '' ? 0 : Number(numericValue);
-      
-      if (numValue > 100000000) {
+      if (numericValue === "") {
+        setErrors(prev => ({
+          ...prev,
+          [name]: 'Không được để trống.'
+        }));
+      } else if (numValue > 100000000) {
         setErrors(prev => ({
           ...prev,
           [name]: 'Giá không được vượt quá 100.000.000đ'
         }));
-      } else if (numValue < 1000000 && numValue !== 0) {
+      } else if (numValue < 1000000) {
         setErrors(prev => ({
           ...prev,
           [name]: 'Giá phải từ 1.000.000đ'
@@ -236,14 +251,12 @@ export default function AdminVillas() {
           [name]: ''
         }));
       }
-
       setFormData(prev => ({
         ...prev,
         [name]: numValue
       }));
       return;
     }
-
     // Xử lý các trường số khác
     const numValue = value === '' ? 0 : Number(value);
     const validations = {
@@ -256,12 +269,31 @@ export default function AdminVillas() {
         min: 1,
         max: 10,
         error: 'Số phòng ngủ phải từ 1 đến 10'
+      },
+      beds: {
+        min: 1,
+        max: 20,
+        error: 'Số giường phải từ 1 đến 20'
+      },
+      maxGuests: {
+        min: 1,
+        max: 40,
+        error: 'Số khách tối đa phải từ 1 đến 40'
       }
     };
-
     const validation = validations[name as keyof typeof validations];
     if (validation) {
-      if (numValue < validation.min || numValue > validation.max) {
+      if (value.trim() === "") {
+        setErrors(prev => ({
+          ...prev,
+          [name]: 'Không được để trống.'
+        }));
+      } else if (isNaN(numValue)) {
+        setErrors(prev => ({
+          ...prev,
+          [name]: 'Vui lòng nhập số hợp lệ.'
+        }));
+      } else if (numValue < validation.min || numValue > validation.max) {
         setErrors(prev => ({
           ...prev,
           [name]: validation.error
@@ -273,7 +305,6 @@ export default function AdminVillas() {
         }));
       }
     }
-
     setFormData(prev => ({
       ...prev,
       [name]: numValue
@@ -458,6 +489,7 @@ export default function AdminVillas() {
   };
 
   const handleEdit = (villa: Villa) => {
+    setErrors({});
     setSelectedVilla(villa);
     setFormData({
       name: villa.name,
@@ -1001,7 +1033,6 @@ export default function AdminVillas() {
                     value={formData.basePrice === 0 ? '' : formData.basePrice.toLocaleString('vi-VN')}
                     onChange={handleNumberChange}
                     placeholder="Nhập giá"
-                    required
                     className={`w-full px-2 py-1.5 text-sm border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.basePrice ? "border-red-500" : "border-gray-300"}`}
                   />
                   {errors.basePrice && <p className="mt-0.5 text-xs text-red-600">{errors.basePrice}</p>}
@@ -1017,7 +1048,6 @@ export default function AdminVillas() {
                     value={formData.size === 0 ? '' : formData.size}
                     onChange={handleNumberChange}
                     placeholder="Nhập diện tích"
-                    required
                     className={`w-full px-2 py-1.5 text-sm border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.size ? "border-red-500" : "border-gray-300"}`}
                   />
                   {errors.size && <p className="mt-0.5 text-xs text-red-600">{errors.size}</p>}
@@ -1030,7 +1060,6 @@ export default function AdminVillas() {
                     value={formData.bedrooms === 0 ? '' : formData.bedrooms}
                     onChange={handleNumberChange}
                     placeholder="Nhập số phòng"
-                    required
                     className={`w-full px-2 py-1.5 text-sm border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.bedrooms ? "border-red-500" : "border-gray-300"}`}
                   />
                   {errors.bedrooms && <p className="mt-0.5 text-xs text-red-600">{errors.bedrooms}</p>}
@@ -1043,7 +1072,6 @@ export default function AdminVillas() {
                     value={formData.beds === 0 ? '' : formData.beds}
                     onChange={handleNumberChange}
                     placeholder="Nhập số giường"
-                    required
                     className={`w-full px-2 py-1.5 text-sm border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.beds ? "border-red-500" : "border-gray-300"}`}
                   />
                   {errors.beds && <p className="mt-0.5 text-xs text-red-600">{errors.beds}</p>}
@@ -1056,7 +1084,6 @@ export default function AdminVillas() {
                     value={formData.maxGuests === 0 ? '' : formData.maxGuests}
                     onChange={handleNumberChange}
                     placeholder="Nhập số khách"
-                    required
                     className={`w-full px-2 py-1.5 text-sm border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.maxGuests ? "border-red-500" : "border-gray-300"}`}
                   />
                   {errors.maxGuests && <p className="mt-0.5 text-xs text-red-600">{errors.maxGuests}</p>}

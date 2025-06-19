@@ -184,13 +184,13 @@ export default function AdminBookings() {
     switch (paymentStatus) {
       case "paid":
         return (
-          <span className="px-2.5 py-1 inline-flex items-center text-xs leading-5 font-medium rounded-full bg-green-100 text-green-800">
+          <span className="px-2.5 py-1 inline-flex items-center text-xs leading-5 font-medium ">
             Đã thanh toán
           </span>
         );
       case "pending":
         return (
-          <span className="px-2.5 py-1 inline-flex items-center text-xs leading-5 font-medium rounded-full bg-yellow-100 text-yellow-800">
+          <span className="px-2.5 py-1 inline-flex items-center text-xs leading-5 font-medium ">
             <ExclamationTriangleIcon className="mr-1 h-4 w-4" />
             Chưa thanh toán
           </span>
